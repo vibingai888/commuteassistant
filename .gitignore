@@ -108,3 +108,6 @@ dmypy.json
 # Temporary files
 *.tmp
 *.temp
+
+commute-assistant.json
+commute-assistant.json
