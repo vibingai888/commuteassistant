@@ -58,3 +58,4 @@ echo ""
 echo "📈 Coverage report generated in htmlcov/index.html"
 echo "🎯 To run specific test files: pytest tests/test_config.py -v"
 echo "🎯 To run specific test functions: pytest tests/test_config.py::TestConfig::test_default_values -v"
+

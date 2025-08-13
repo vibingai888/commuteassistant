@@ -85,3 +85,4 @@ jobs:
         black --check app/ tests/
         isort --check-only app/ tests/
         mypy app/ --ignore-missing-imports
+

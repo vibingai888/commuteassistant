@@ -311,3 +311,4 @@ Current coverage can be viewed by running:
 pytest tests/ --cov=app --cov-report=html
 open htmlcov/index.html
 ```
+

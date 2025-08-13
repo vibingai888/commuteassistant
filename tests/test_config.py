@@ -122,3 +122,4 @@ class TestConfig:
         with patch.dict(os.environ, test_env, clear=True):
             config = Config()
             assert config.DEBUG is False
+
