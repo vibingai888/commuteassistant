@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Generator API Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Podcast Generator API Test</h1>
+        
+        <div class="api-url">
+            <strong>API URL:</strong> <span id="apiUrl">Loading...</span>
+            <div class="api-controls">
+                <div class="toggle-row" id="toggleGroup">
+                    <span class="toggle-label">Localhost</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modeSwitch">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">GCP</span>
+                </div>
+                <div class="advanced-group">
+                    <label style="display:inline-flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="advancedMode"> Advanced (custom URL)
+                    </label>
+                </div>
+                <div class="custom-url-group" id="customGroup">
+                    <input id="apiUrlInput" type="text" placeholder="https://your-custom-api-url">
+                    <button id="saveApiUrlBtn" type="button">Save URL</button>
+                </div>
+            </div>
+        </div>
+        
+        <form id="podcastForm">
+            <div class="form-group">
+                <label for="topic">Podcast Topic:</label>
+                <input type="text" id="topic" name="topic" placeholder="e.g., Artificial Intelligence in Healthcare" required>
+                <div id="chips" class="chips-row"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="minutes">Duration (minutes, 1 - 15):</label>
+                <input type="number" id="minutes" name="minutes" min="1" max="15" value="3" required>
+            </div>
+            
+            <button type="submit" id="generateBtn">🎵 Generate Podcast</button>
+        </form>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div id="audioPlayer" class="audio-player" style="display: none;">
+            <div class="play-meta">
+                <span id="wordsMeta">Words: 0/0</span>
+                <span id="elapsedMeta">Generated: 00:00</span>
+            </div>
+            <div id="bufferBar" class="buffer-bar"></div>
+            <audio id="audio" controls></audio>
+            <!-- <button id="downloadBtn" style="margin-top: 10px;">Download Audio</button> -->
+        </div>
+        
+        <div class="logs" id="logs"></div>
+    </div>
+
+    <!-- Load JavaScript modules -->
+    <script src="js/api-client.js"></script>
+    <script src="js/audio-player.js"></script>
+    <script src="js/ui-components.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

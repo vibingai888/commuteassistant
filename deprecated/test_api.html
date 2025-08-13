@@ -1,0 +1,409 @@
+<!--
+================================================================================
+DEPRECATED FILE - DO NOT USE
+================================================================================
+
+This file has been deprecated and replaced by the new modular frontend structure.
+
+NEW STRUCTURE:
+- frontend/index.html (main HTML file)
+- frontend/css/styles.css (all styles)
+- frontend/js/api-client.js (API communication)
+- frontend/js/audio-player.js (audio playback logic)
+- frontend/js/ui-components.js (UI interactions)
+- frontend/js/app.js (main application logic)
+
+REASON: Refactored into separate modules for better maintainability and organization.
+
+DO NOT USE THIS FILE FOR NEW DEVELOPMENT.
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Generator API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        h1 { text-align: center; margin-bottom: 30px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #fff; }
+        input, select { width: 100%; padding: 12px; border: none; border-radius: 10px; background: rgba(255,255,255,0.9); font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: linear-gradient(45deg, #ff6b6b, #ee5a24); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .status { margin-top: 20px; padding: 15px; border-radius: 10px; text-align: center; font-weight: 600; }
+        .status.loading { background: rgba(255,193,7,0.2); color: #ffc107; }
+        .status.success { background: rgba(40,167,69,0.2); color: #28a745; }
+        .status.error { background: rgba(220,53,69,0.2); color: #dc3545; }
+        .audio-player { margin-top: 20px; text-align: center; }
+        audio { width: 100%; border-radius: 10px; }
+        .api-url { background: rgba(0,0,0,0.2); padding: 10px 10px 50px; border-radius: 8px; margin-bottom: 20px; font-family: monospace; word-break: break-all; }
+        .api-controls { margin-top: 10px; position: relative; }
+        .toggle-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; }
+        .toggle-label { font-weight: 600; opacity: 0.9; }
+        .switch { position: relative; display: inline-block; width: 54px; height: 28px; }
+        .switch input { display: none; }
+        .slider { position: absolute; cursor: pointer; top:0; left:0; right:0; bottom:0; background:#cfd3d7; transition: background-color 0.2s ease, box-shadow 0.2s ease; border-radius: 999px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+        .slider:before { position: absolute; content:""; height:24px; width:24px; left:2px; top:2px; background:#fff; border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease; }
+        input:checked + .slider { background:#34c759; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .advanced-group { position:absolute; right:12px; bottom:10px; font-size:0.9rem; opacity:0.9; display:inline-flex; align-items:center; gap:8px; }
+        .advanced-group input { transform: scale(0.9); }
+        .custom-url-group { margin-top:14px; display:none; grid-template-columns:1fr auto; gap:10px; max-width:560px; margin-left:auto; margin-right:auto; }
+        .logs { margin-top: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        /* Chips row */
+        .chips-row { display:flex; align-items:center; justify-content: space-between; gap:10px; margin-top:8px; }
+        .chip { flex:1; min-width:0; text-overflow: ellipsis; overflow:hidden; white-space: nowrap; padding:6px 10px; border-radius:999px; background: transparent; border:1px solid rgba(255,255,255,0.6); color:#fff; font-size:12px; font-weight:600; cursor:pointer; }
+        /* New playback meta row */
+        .play-meta { display:flex; align-items:center; justify-content: space-between; margin: 8px 0 4px; font-weight:600; }
+        .buffer-bar { display:grid; grid-auto-flow: column; gap:6px; margin: 8px 0 0; }
+        .buffer-seg { height:8px; border-radius:4px; background: rgba(255,255,255,0.25); cursor:pointer; position:relative; }
+        .seg-gray { background: rgba(255,255,255,0.25); }
+        .seg-green { background: #7bd88f; }
+        .seg-red { background: #ff5a5f; }
+        .seg-blink-yellow { background: #ffd54f; animation: blink 1s linear infinite; }
+        .seg-blink-green { background: #7bd88f; animation: pulse 1.2s ease-in-out infinite; }
+        .buffer-seg.current { box-shadow: 0 0 0 2px #fff inset; }
+        @keyframes blink { 50% { opacity: 0.4; } }
+        @keyframes pulse { 0%,100%{ filter: brightness(1); } 50%{ filter: brightness(1.4);} }
+        .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius: 50%; animation: spin 1s linear infinite; display:inline-block; vertical-align:middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .note { font-size: 12px; opacity:0.85; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Podcast Generator API Test</h1>
+        
+        <div class="api-url">
+            <strong>API URL:</strong> <span id="apiUrl">Loading...</span>
+            <div class="api-controls">
+                <div class="toggle-row" id="toggleGroup">
+                    <span class="toggle-label">Localhost</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modeSwitch">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">GCP</span>
+                </div>
+                <div class="advanced-group">
+                    <label style="display:inline-flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="advancedMode"> Advanced (custom URL)
+                    </label>
+                </div>
+                <div class="custom-url-group" id="customGroup">
+                    <input id="apiUrlInput" type="text" placeholder="https://your-custom-api-url">
+                    <button id="saveApiUrlBtn" type="button">Save URL</button>
+                </div>
+            </div>
+        </div>
+        
+        <form id="podcastForm">
+            <div class="form-group">
+                <label for="topic">Podcast Topic:</label>
+                <input type="text" id="topic" name="topic" placeholder="e.g., Artificial Intelligence in Healthcare" required>
+                <div id="chips" class="chips-row"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="minutes">Duration (minutes, 1 - 15):</label>
+                <input type="number" id="minutes" name="minutes" min="1" max="15" step="1" value="2" required />
+            </div>
+            
+            <button type="submit" id="generateBtn">🎵 Generate Podcast</button>
+        </form>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div id="audioPlayer" class="audio-player" style="display: none;">
+            <div class="play-meta">
+                <div id="wordsMeta" class="note">Words: 0/0</div>
+                <div id="elapsedMeta" class="note">Generated: 0:00</div>
+            </div>
+            <audio id="audio" controls>
+                Your browser does not support the audio element.
+            </audio>
+            <div id="bufferBar" class="buffer-bar"></div>
+            <!-- <button id="downloadBtn" style="margin-top:10px">Download</button> -->
+        </div>
+        
+        <div class="logs">
+            <strong>Logs:</strong>
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Defaults
+        const defaultLocal = 'http://localhost:8000';
+        const defaultGcp = 'https://podcast-generator-api-wychcrdora-uc.a.run.app';
+
+        // State from localStorage
+        let API_MODE = localStorage.getItem('API_MODE') || 'localhost'; // 'localhost' | 'gcp' | 'custom'
+        const ADVANCED = localStorage.getItem('ADVANCED') === 'true';
+        const STORED_CUSTOM_URL = localStorage.getItem('API_BASE_URL') || '';
+        const STORED_GCP_URL = localStorage.getItem('GCP_URL') || defaultGcp;
+
+        // DOM elements
+        const apiUrlElement = document.getElementById('apiUrl');
+        const toggleGroup = document.getElementById('toggleGroup');
+        const modeSwitch = document.getElementById('modeSwitch');
+        const advancedMode = document.getElementById('advancedMode');
+        const customGroup = document.getElementById('customGroup');
+        const apiUrlInput = document.getElementById('apiUrlInput');
+        const saveApiUrlBtn = document.getElementById('saveApiUrlBtn');
+        const form = document.getElementById('podcastForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const status = document.getElementById('status');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audio = document.getElementById('audio');
+        const bufferBar = document.getElementById('bufferBar');
+        const logContent = document.getElementById('logContent');
+        const minutesInput = document.getElementById('minutes');
+        const wordsMeta = document.getElementById('wordsMeta');
+        const elapsedMeta = document.getElementById('elapsedMeta');
+
+        let API_BASE_URL = defaultLocal; // set by updateApiFromState()
+
+        // Logging
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.innerHTML = `<span style="color:#ffc107;">[${timestamp}]</span> ${message}`;
+            logContent.appendChild(div);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        function base64ToBlob(b64, mime) {
+            try { const bytes = atob(b64); const arr = new Uint8Array(bytes.length); for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i); return new Blob([arr], {type: mime||'audio/wav'});} catch(e){ log(`Base64 decode failed: ${e.message}`, 'error'); return new Blob([]);} }
+        function formatTime(sec){ sec=Math.max(0,Math.floor(sec||0)); const m=Math.floor(sec/60); const s=sec%60; return `${m}:${s.toString().padStart(2,'0')}`; }
+
+        function clampMinutesValue() { const min=parseInt(minutesInput.min,10); const max=parseInt(minutesInput.max,10); let val=parseInt(minutesInput.value,10); if(isNaN(val)) val=1; if(val<min){val=min;log(`Minutes clamped to ${min}`);} if(val>max){val=max;log(`Minutes clamped to ${max}`);} minutesInput.value=val; return val; }
+
+        function updateApiFromState(){ if(API_MODE==='custom'){ API_BASE_URL=STORED_CUSTOM_URL||defaultLocal; } else if(API_MODE==='gcp'){ API_BASE_URL=STORED_GCP_URL; } else { API_BASE_URL=defaultLocal; } apiUrlElement.textContent=API_BASE_URL; apiUrlInput.value=API_MODE==='custom'?(STORED_CUSTOM_URL||''):''; modeSwitch.checked=(API_MODE==='gcp'); advancedMode.checked=(API_MODE==='custom')||ADVANCED; toggleGroup.style.display=advancedMode.checked?'none':'flex'; customGroup.style.display=advancedMode.checked?'grid':'none'; log(`Using API: ${API_BASE_URL}`); }
+        function setMode(mode){ API_MODE=mode; localStorage.setItem('API_MODE',API_MODE); if(API_MODE!=='custom'){ apiUrlInput.value=''; } updateApiFromState(); }
+        if(!['localhost','gcp','custom'].includes(API_MODE)) API_MODE='localhost'; updateApiFromState(); clampMinutesValue();
+
+        modeSwitch.addEventListener('change',()=>{ const mode=modeSwitch.checked?'gcp':'localhost'; log(`Switched to ${mode==='gcp'?'GCP':'Localhost'} mode`); if(mode==='gcp'){ localStorage.setItem('GCP_URL',STORED_GCP_URL);} setMode(mode); });
+        advancedMode.addEventListener('change',()=>{ const on=advancedMode.checked; localStorage.setItem('ADVANCED', on?'true':'false'); if(on){ log('Advanced mode enabled (custom URL)'); setMode('custom'); customGroup.style.display='grid'; toggleGroup.style.display='none'; if(!apiUrlInput.value){ apiUrlInput.value=STORED_CUSTOM_URL||''; } } else { log('Advanced mode disabled; showing toggle'); setMode('localhost'); customGroup.style.display='none'; toggleGroup.style.display='flex'; } });
+        saveApiUrlBtn.addEventListener('click',()=>{ const newUrl=(apiUrlInput.value||'').trim(); if(!newUrl){ showStatus('Please enter a valid URL','error'); return; } localStorage.setItem('API_BASE_URL',newUrl); log(`Saved custom API URL: ${newUrl}`); setMode('custom'); showStatus('Saved API URL','success'); });
+        minutesInput.addEventListener('input',clampMinutesValue); minutesInput.addEventListener('blur',clampMinutesValue);
+
+        function showStatus(message,type){
+            // replace any spinner token with real spinner element
+            const hasSpin = /<spinner\/>/i.test(message) || /\[spinner\]/i.test(message);
+            status.className=`status ${type}`; status.style.display='block';
+            status.innerHTML = hasSpin ? message.replace(/(<spinner\/>|\[spinner\])/i, '<span class="spinner"></span>') : message;
+        }
+        function hideStatus(){ status.style.display='none'; }
+
+        // Sequential TTS state
+        let segments = [];               // array of {segmentId, multiSpeakerMarkup:{turns}}
+        let wordsPerSeg = [];            // array of total words per segment
+        let blobs = new Map();           // segmentId -> Blob
+        let inFlight = new Map();        // segmentId -> Promise
+        let failCounts = new Map();      // segmentId -> number
+        let currentId = 1;
+        let totalListenedSec = 0;
+        let lastPlayStart = null;
+        let pendingAutoplay = false;    // if current segment not buffered yet, auto-play when ready
+        let totalWordsAll = 0;          // total words across all segments
+        let wordsSpokenAll = 0;         // cumulative estimate based on playback
+        let totalGeneratedSec = 0;      // sum of durations of fetched segments
+        let durationById = new Map();    // segmentId -> seconds
+        let listenedSet = new Set();     // finished segments
+
+        // Build buffer bar UI
+        function renderBufferBar(){
+            bufferBar.innerHTML='';
+            segments.forEach(seg=>{
+                const el=document.createElement('div');
+                let cls = 'buffer-seg ';
+                const fetched = blobs.has(seg.segmentId);
+                const inflight = inFlight.has(seg.segmentId);
+                const isCurrent = seg.segmentId===currentId;
+                const listened = listenedSet.has(seg.segmentId);
+                if (isCurrent && !fetched && inflight) cls += 'seg-blink-yellow ';
+                else if (isCurrent && fetched) cls += 'seg-blink-green ';
+                else if (listened) cls += 'seg-red ';
+                else if (fetched) cls += 'seg-green ';
+                else if (inflight) cls += 'seg-blink-yellow ';
+                else cls += 'seg-gray ';
+                if (isCurrent) cls += 'current ';
+                el.className = cls.trim();
+                el.style.width = `${Math.max(6, 100/segments.length - 1)}%`;
+                el.title = `Segment ${seg.segmentId} (${wordsPerSeg[seg.segmentId-1]} words)`;
+                el.addEventListener('click', async ()=>{
+                    if (seg.segmentId===currentId && audio.src) return;
+                    showStatus(`Loading segment ${seg.segmentId}... <spinner/>`, 'loading');
+                    currentId = seg.segmentId;
+                    audio.removeAttribute('src'); audio.load();
+                    pendingAutoplay = true;
+                    await scheduleFetch(seg.segmentId);
+                    playCurrent();
+                });
+                bufferBar.appendChild(el);
+            });
+        }
+
+        // Words progress display (approx by time proportion)
+        function updateWordsMeta(){
+            const idx=currentId-1; if(idx<0||idx>=segments.length) return;
+            const segTotal=wordsPerSeg[idx]||0; const dur=audio.duration||0; const cur=audio.currentTime||0; const segSpoken = Math.min(segTotal, Math.floor((dur?cur/dur:0)*segTotal));
+            // compute cumulative: words of fully played previous segments + current spoken
+            const prevSum = wordsPerSeg.slice(0, idx).reduce((a,b)=>a+b,0);
+            wordsSpokenAll = prevSum + segSpoken;
+            wordsMeta.textContent = `Words: ${wordsSpokenAll}/${totalWordsAll}`;
+        }
+        function updateElapsedMeta(){
+            // show total generated duration (sum of durations for fetched segments)
+            totalGeneratedSec = Array.from(durationById.values()).reduce((a,b)=>a+(b||0),0);
+            elapsedMeta.textContent = `Generated: ${formatTime(totalGeneratedSec)}`;
+        }
+        setInterval(updateElapsedMeta, 800);
+
+        // Networking
+        async function fetchSegment(seg){
+            if (blobs.has(seg.segmentId)) return; // already
+            const ttsUrl = `${API_BASE_URL}/tts-segment/`;
+            log(`Fetching audio for segment ${seg.segmentId}...`);
+            const resp = await fetch(ttsUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ segmentId: seg.segmentId, turns: seg.multiSpeakerMarkup.turns })});
+            if(!resp.ok) throw new Error(`TTS failed for segment ${seg.segmentId}: HTTP ${resp.status}`);
+            const data = await resp.json();
+            const blob = base64ToBlob(data.base64, data.mime||'audio/wav');
+            blobs.set(seg.segmentId, blob);
+            // compute duration by decoding metadata in background
+            const tmpAudio = new Audio();
+            tmpAudio.src = URL.createObjectURL(blob);
+            tmpAudio.addEventListener('loadedmetadata', ()=>{ durationById.set(seg.segmentId, tmpAudio.duration||0); updateElapsedMeta(); URL.revokeObjectURL(tmpAudio.src); }, { once:true });
+            renderBufferBar();
+            log(`Segment ${seg.segmentId} audio ready (${Math.round(blob.size/1024)} KB)`);
+            if (seg.segmentId === currentId && pendingAutoplay) { pendingAutoplay = false; playCurrent(); }
+        }
+
+        async function scheduleFetch(segmentId){
+            if (blobs.has(segmentId)) return Promise.resolve();
+            if (inFlight.has(segmentId)) return inFlight.get(segmentId);
+            const seg = segments.find(s=>s.segmentId===segmentId);
+            if (!seg) return Promise.resolve();
+            const attempt = (failCounts.get(segmentId)||0) + 1;
+            failCounts.set(segmentId, attempt);
+            const p = fetchSegment(seg).catch(err=>{
+                log(`TTS failed for segment ${segmentId}: ${err.message}`, 'error');
+                inFlight.delete(segmentId);
+                // exponential backoff scheduling will be driven by subsequent triggers (play/progress/click)
+                throw err;
+            }).finally(()=>{
+                inFlight.delete(segmentId);
+            });
+            inFlight.set(segmentId, p);
+            return p;
+        }
+
+        // Playback
+        function playCurrent(){
+            const seg = segments.find(s=>s.segmentId===currentId); if(!seg){ log('No segment to play','error'); return; }
+            const blob = blobs.get(seg.segmentId);
+            if(!blob){
+                // show empty slider while buffering and set pending autoplay
+                pendingAutoplay = true;
+                audio.removeAttribute('src');
+                audio.load();
+                showStatus(`Buffering segment ${seg.segmentId}... <spinner/>`,'loading');
+                scheduleFetch(seg.segmentId).catch(e=>log(e.message,'error'));
+                return;
+            }
+            pendingAutoplay = false;
+            const url = URL.createObjectURL(blob);
+            audio.src = url;
+            audioPlayer.style.display='block';
+            audio.onloadedmetadata = ()=>{ updateWordsMeta(); };
+            audio.ontimeupdate = ()=>{ updateWordsMeta(); };
+            audio.onplay = ()=>{
+                lastPlayStart = Date.now();
+                // Only fetch next segment when current segment has started playing
+                const nextId = currentId + 1;
+                const next = segments.find(s=>s.segmentId===nextId);
+                if(next && !blobs.has(nextId) && !inFlight.has(nextId)){
+                    scheduleFetch(nextId).catch(e=>log(e.message,'error'));
+                }
+            };
+            audio.onpause = ()=>{ if(lastPlayStart){ totalListenedSec += (Date.now()-lastPlayStart)/1000; lastPlayStart=null; } };
+            audio.onended = async ()=>{
+                if(lastPlayStart){ totalListenedSec += (Date.now()-lastPlayStart)/1000; lastPlayStart=null; }
+                listenedSet.add(currentId);
+                const next = segments.find(s=>s.segmentId===currentId+1);
+                if(next){ currentId+=1; if(!blobs.has(next.segmentId) && !inFlight.has(next.segmentId)){ scheduleFetch(next.segmentId).catch(e=>log(e.message,'error')); }
+                    playCurrent();
+                } else { showStatus('Playback complete','success'); }
+                renderBufferBar();
+            };
+            audio.play().then(()=>{ showStatus(`Playing segment ${seg.segmentId}/${segments.length}`,'success'); renderBufferBar(); }).catch(e=>{ log(`Play error: ${e.message}`,'error'); showStatus(`Click play to continue (segment ${seg.segmentId})`,'error'); });
+        }
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const topic = document.getElementById('topic').value; const minutes = clampMinutesValue();
+            if(!topic.trim()){ showStatus('Please enter a topic','error'); return; }
+            hideStatus(); audioPlayer.style.display='none'; generateBtn.disabled=true; generateBtn.textContent='🔄 Generating...';
+            log(`Starting podcast generation for topic: "${topic}" (${minutes} minutes)`);
+            showStatus('Generating chunked script...','loading');
+            try { await streamGenerate(topic, minutes); } catch (error) { log(`Error: ${error.message}`,'error'); showStatus(`Error: ${error.message}`,'error'); generateBtn.disabled=false; generateBtn.textContent='🎵 Generate Podcast'; }
+        });
+
+        async function streamGenerate(topic, minutes){
+            const scriptUrl = `${API_BASE_URL}/generate-script-chunked/`;
+            const r1 = await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({topic, minutes})});
+            if(!r1.ok) throw new Error(`Script request failed: HTTP ${r1.status}`);
+            const data = await r1.json();
+            segments = (data.segments||[]).sort((a,b)=>(a.segmentId||0)-(b.segmentId||0));
+            if(!segments.length) throw new Error('No segments returned');
+            wordsPerSeg = segments.map(seg=>{ const turns=seg.multiSpeakerMarkup.turns||[]; return turns.reduce((acc,t)=> acc + (t.text||'').trim().split(/\s+/).filter(Boolean).length, 0); });
+            totalWordsAll = wordsPerSeg.reduce((a,b)=>a+b,0);
+            blobs = new Map(); inFlight = new Map(); failCounts = new Map(); currentId = 1; totalListenedSec=0; lastPlayStart=null; wordsSpokenAll=0; pendingAutoplay=false; durationById=new Map(); listenedSet=new Set();
+            renderBufferBar(); updateElapsedMeta();
+            log(`Received ${segments.length} segment definitions (total words ${totalWordsAll})`);
+            const first = segments[0]; await scheduleFetch(first.segmentId); audioPlayer.style.display='block';
+            generateBtn.disabled=false; generateBtn.textContent='🎵 Generate Podcast';
+            playCurrent();
+        }
+
+        // Initial logs
+        log('Frontend loaded successfully');
+
+        // Suggestion chips
+        async function loadChips(){
+            try{
+                const res = await fetch(`${API_BASE_URL}/suggestions`);
+                let arr = [];
+                if(res.ok){ arr = await res.json(); } else { arr = ["AI in Healthcare","Climate","Las Vegas History"]; }
+                // Shuffle and take first 3 unique
+                arr = Array.from(new Set(arr)).sort(()=>Math.random()-0.5).slice(0,3);
+                const chipsDiv = document.getElementById('chips');
+                chipsDiv.innerHTML='';
+                arr.forEach(text=>{
+                    const b=document.createElement('button');
+                    b.type='button'; b.className='chip'; b.title=text; b.textContent=text;
+                    b.addEventListener('click',()=>{ document.getElementById('topic').value=text; log(`Selected topic chip: ${text}`); });
+                    chipsDiv.appendChild(b);
+                });
+                if ((arr||[]).length) log(`Loaded ${Math.min(3, arr.length)} suggestion chips`);
+            }catch(e){ log(`Failed to load suggestions: ${e.message}`,'error'); }
+        }
+        loadChips();
+    </script>
+</body>
+</html>
