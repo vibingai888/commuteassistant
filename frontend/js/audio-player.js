@@ -25,6 +25,7 @@ class AudioPlayer {
         this.wordsPerSeg = [];
         this.totalWordsAll = 0;
         this.totalGeneratedSec = 0;
+        this.mockMode = false; // Flag to indicate mock mode
 
         this.setupAudioEvents();
     }
@@ -71,8 +72,29 @@ class AudioPlayer {
         if (this.blobs.has(seg.segmentId)) return; // already fetched
         
         this.log(`Fetching audio for segment ${seg.segmentId}...`);
-        const data = await this.apiClient.generateTTSSegment(seg.segmentId, seg.multiSpeakerMarkup.turns);
-        const blob = this.apiClient.base64ToBlob(data.base64, data.mime || 'audio/wav');
+        console.log(`fetchSegment called for segment ${seg.segmentId}, mockMode: ${this.mockMode}, audioUrl: ${seg.audioUrl}`);
+        
+        let blob;
+        if (this.mockMode && seg.audioUrl) {
+            // Mock mode: load audio file directly
+            console.log(`Loading mock audio file: ${seg.audioUrl}`);
+            try {
+                const response = await fetch(seg.audioUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to load mock audio: HTTP ${response.status}`);
+                }
+                blob = await response.blob();
+                console.log(`Successfully loaded mock audio for segment ${seg.segmentId}, blob size: ${blob.size} bytes`);
+            } catch (error) {
+                console.error(`Error loading mock audio for segment ${seg.segmentId}:`, error);
+                throw new Error(`Mock audio load failed: ${error.message}`);
+            }
+        } else {
+            // Normal mode: generate TTS via API
+            console.log(`Using normal TTS mode for segment ${seg.segmentId}`);
+            const data = await this.apiClient.generateTTSSegment(seg.segmentId, seg.multiSpeakerMarkup.turns);
+            blob = this.apiClient.base64ToBlob(data.base64, data.mime || 'audio/wav');
+        }
         
         this.blobs.set(seg.segmentId, blob);
         
@@ -213,7 +235,8 @@ class AudioPlayer {
         });
     }
 
-    async loadSegments(segments) {
+    async loadSegments(segments, mockMode = false) {
+        this.mockMode = mockMode;
         this.segments = segments.sort((a, b) => (a.segmentId || 0) - (b.segmentId || 0));
         this.wordsPerSeg = this.segments.map(seg => {
             const turns = seg.multiSpeakerMarkup.turns || [];
@@ -236,7 +259,11 @@ class AudioPlayer {
         this.renderBufferBar();
         this.updateElapsedMeta();
         
-        this.log(`Received ${this.segments.length} segment definitions (total words ${this.totalWordsAll})`);
+        if (mockMode) {
+            this.log(`Loaded ${this.segments.length} mock segments in mock mode (total words ${this.totalWordsAll})`);
+        } else {
+            this.log(`Received ${this.segments.length} segment definitions (total words ${this.totalWordsAll})`);
+        }
         
         // Start with first segment
         const first = this.segments[0];
