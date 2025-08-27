@@ -159,7 +159,14 @@ def synthesize_audio_multi_speaker(script_json_text: str, output_filepath: str) 
         import json
         from app.services.script_service import clean_json_string, validate_script_json
         cleaned = clean_json_string(script_json_text)
-        script_obj = json.loads(cleaned)
+        
+        # If cleaned is already a dict, use it directly
+        if isinstance(cleaned, dict):
+            script_obj = cleaned
+        else:
+            # Otherwise, parse it as JSON
+            script_obj = json.loads(cleaned)
+            
         logger.info("[TTS] JSON script parsed successfully")
         
         # Validate script structure

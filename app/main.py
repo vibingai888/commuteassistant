@@ -148,6 +148,7 @@ async def get_podcast(podcast_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/podcasts/audio/{podcast_id}")
+@app.head("/podcasts/audio/{podcast_id}")
 async def get_podcast_audio(podcast_id: str):
     """Get podcast audio file"""
     logger.info(f"[API] get-podcast-audio called with ID: {podcast_id}")
@@ -159,7 +160,13 @@ async def get_podcast_audio(podcast_id: str):
             return FileResponse(
                 path=audio_path,
                 media_type="audio/mpeg",
-                filename=f"podcast_{podcast_id}.mp3"
+                filename=f"podcast_{podcast_id}.mp3",
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, HEAD",
+                    "Access-Control-Allow-Headers": "*",
+                    "Cache-Control": "public, max-age=3600"
+                }
             )
         else:
             logger.warning(f"[API] Audio file not found for podcast {podcast_id}")

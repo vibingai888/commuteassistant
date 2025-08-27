@@ -37,7 +37,14 @@ def generate_full_podcast(topic: str, minutes: int) -> Dict[str, Any]:
         # Parse script to get word count
         from app.services.script_service import clean_json_string, validate_script_json
         cleaned_script = clean_json_string(script_json)
-        script_obj = json.loads(cleaned_script)
+        
+        # If cleaned_script is already a dict, use it directly
+        if isinstance(cleaned_script, dict):
+            script_obj = cleaned_script
+        else:
+            # Otherwise, parse it as JSON
+            script_obj = json.loads(cleaned_script)
+            
         validate_script_json(script_obj)
         
         turns = script_obj["multiSpeakerMarkup"]["turns"]

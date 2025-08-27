@@ -194,7 +194,9 @@ class FeedsManager {
             }
             
             // Create audio element and play
-            const audio = new Audio(`/podcasts/audio/${podcastId}`);
+            const audioUrl = `${this.apiClient.baseUrl}/podcasts/audio/${podcastId}`;
+            window.log(`Creating audio element with URL: ${audioUrl}`);
+            const audio = new Audio(audioUrl);
             audio.controls = true;
             
             // Replace existing audio player
@@ -214,10 +216,45 @@ class FeedsManager {
             if (wordsMeta) wordsMeta.textContent = `Words: ${podcast.word_count}`;
             if (elapsedMeta) elapsedMeta.textContent = `Duration: ${this.formatDuration(podcast.duration_seconds)}`;
             
-            // Play audio
-            audio.play().catch(error => {
+            // Add error handling for audio loading
+            audio.onerror = (error) => {
+                window.log(`Audio loading error: ${error.message}`, 'error');
+            };
+            
+            audio.onloadstart = () => {
+                window.log(`Audio loading started for: ${podcast.topic}`);
+            };
+            
+            audio.oncanplay = () => {
+                window.log(`Audio can start playing: ${podcast.topic}`);
+            };
+            
+            // Try to play audio with user interaction handling
+            try {
+                // Check if audio is ready
+                if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
+                    await audio.play();
+                    window.log(`Audio playback started successfully`);
+                } else {
+                    // Wait for audio to be ready
+                    audio.oncanplay = async () => {
+                        try {
+                            await audio.play();
+                            window.log(`Audio playback started after loading`);
+                        } catch (playError) {
+                            window.log(`Failed to play after loading: ${playError.message}`, 'error');
+                        }
+                    };
+                    // Start loading
+                    audio.load();
+                }
+            } catch (error) {
                 window.log(`Failed to play audio: ${error.message}`, 'error');
-            });
+                // Show user-friendly error message
+                if (error.name === 'NotAllowedError') {
+                    window.log(`Audio playback blocked. Please click the play button again.`, 'warning');
+                }
+            }
             
             window.log(`Started playing: ${podcast.topic}`);
             

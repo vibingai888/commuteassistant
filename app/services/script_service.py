@@ -38,12 +38,21 @@ def get_vertex_client() -> genai.Client:
         initialize_vertex_client()
     return GENAI_VERTEX_CLIENT
 
-def clean_json_string(s: str) -> str:
+def clean_json_string(s) -> str:
     """Remove markdown code fences and whitespace from API responses"""
-    s = s.strip()
-    s = re.sub(r"^```(?:json)?\s*", "", s)
-    s = re.sub(r"\s*```$", "", s)
-    return s
+    # If s is already a dict, return it as is
+    if isinstance(s, dict):
+        return s
+    
+    # If s is a string, clean it
+    if isinstance(s, str):
+        s = s.strip()
+        s = re.sub(r"^```(?:json)?\s*", "", s)
+        s = re.sub(r"\s*```$", "", s)
+        return s
+    
+    # If s is neither string nor dict, raise error
+    raise ValueError(f"Expected string or dict, got {type(s)}")
 
 def validate_script_json(script: dict) -> None:
     """Validate the generated JSON follows expected schema"""
@@ -211,7 +220,7 @@ def chunk_turns_by_words(
 def generate_podcast_script_chunked(
     topic: str, 
     minutes: int, 
-    words_per_chunk: int = 100, 
+    words_per_chunk: int = 100,
     wpm: int = 190
 ) -> Dict[str, Any]:
     """Ask the model for chunked segments; fallback to local chunking if needed."""
@@ -219,7 +228,7 @@ def generate_podcast_script_chunked(
     logger.info(f"[Script] Parameters: topic='{topic}', minutes={minutes}, words_per_chunk={words_per_chunk}, wpm={wpm}")
     
     # Validate inputs
-    if not topic or not topic.strip():
+    if not topic or not isinstance(topic, str) or not topic.strip():
         raise ValueError("Topic cannot be empty")
     
     if minutes <= 0 or minutes > 15:
