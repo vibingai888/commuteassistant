@@ -98,12 +98,21 @@ h1 {
     font-size: 14px;
 }
 
-.refresh-btn {
+.refresh-btn,
+.force-gcp-btn {
     width: auto;
     padding: 8px 15px;
-    background: linear-gradient(45deg, #4CAF50, #45a049);
     font-size: 14px;
     border-radius: 8px;
+    margin-left: 8px;
+}
+
+.refresh-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.force-gcp-btn {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
 }
 
 .podcasts-list {

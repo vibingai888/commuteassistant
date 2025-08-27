@@ -18,6 +18,12 @@ class FeedsManager {
     init() {
         this.setupEventListeners();
         this.loadLikedPodcasts();
+        
+        // Force GCP mode for production
+        if (window.location.hostname === 'commuteassistant.web.app') {
+            this.apiClient.setApiMode('gcp');
+            window.log('Forced GCP mode for production');
+        }
     }
 
     setupEventListeners() {
@@ -38,6 +44,16 @@ class FeedsManager {
             refreshBtn.addEventListener('click', () => {
                 this.loadFeeds();
                 window.log('Refreshed podcast feeds');
+            });
+        }
+        
+        // Force GCP mode button
+        const forceGcpBtn = document.getElementById('forceGcpMode');
+        if (forceGcpBtn) {
+            forceGcpBtn.addEventListener('click', () => {
+                this.apiClient.setApiMode('gcp');
+                window.log('Forced GCP mode, refreshing feeds...');
+                this.loadFeeds();
             });
         }
 
@@ -73,7 +89,11 @@ class FeedsManager {
             this.showLoading(true);
             this.showError(false);
             
+            // Debug: Log the current API configuration
             window.log(`Loading feeds: page ${page}, size ${pageSize}, sort by ${sortBy}`);
+            window.log(`API Base URL: ${this.apiClient.baseUrl}`);
+            window.log(`API Mode: ${localStorage.getItem('apiMode')}`);
+            window.log(`Advanced Mode: ${localStorage.getItem('advancedMode')}`);
             
             const response = await this.apiClient.getPodcastFeeds(page, pageSize, sortBy);
             
