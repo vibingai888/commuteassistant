@@ -194,16 +194,38 @@ class UIComponents {
     }
 
     async streamGenerate(topic, minutes) {
-        const data = await this.apiClient.generateScriptChunked(topic, minutes);
-        const segments = (data.segments || []).sort((a, b) => (a.segmentId || 0) - (b.segmentId || 0));
-        
-        if (!segments.length) {
-            throw new Error('No segments returned');
-        }
+        try {
+            // First, generate the full podcast to store it
+            this.log('🎵 Generating full podcast and storing it...');
+            const fullPodcast = await this.apiClient.generateFullPodcast(topic, minutes);
+            this.log(`✅ Podcast generated and stored with ID: ${fullPodcast.id}`);
+            
+            // Then get the chunked script for audio player
+            this.log('🎵 Getting chunked script for audio player...');
+            const data = await this.apiClient.generateScriptChunked(topic, minutes);
+            const segments = (data.segments || []).sort((a, b) => (a.segmentId || 0) - (b.segmentId || 0));
+            
+            if (!segments.length) {
+                throw new Error('No segments returned');
+            }
 
-        // Initialize audio player with segments
-        if (window.audioPlayer) {
-            await window.audioPlayer.loadSegments(segments, false); // false = normal mode
+            // Initialize audio player with segments
+            if (window.audioPlayer) {
+                await window.audioPlayer.loadSegments(segments, false); // false = normal mode
+            }
+            
+            // Refresh the feeds to show the new podcast
+            this.log('🔄 Refreshing podcast feeds to show new podcast...');
+            if (window.podcastApp && window.podcastApp.feedsManager) {
+                await window.podcastApp.feedsManager.loadFeeds();
+            }
+            
+            // Show success message
+            this.showStatus(`🎉 Podcast generated and stored! You can now find it in the "Discover Podcasts" tab.`, 'success');
+            
+        } catch (error) {
+            this.log(`Error in podcast generation: ${error.message}`, 'error');
+            throw error;
         }
     }
 

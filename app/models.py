@@ -20,7 +20,8 @@ class PodcastRequest(BaseModel):
 
 class PodcastResponse(BaseModel):
     """Response model for podcast generation"""
-    audio_base64: str = Field(..., description="Base64 encoded audio data")
+    podcast_id: str = Field(..., description="Unique podcast identifier")
+    audio_file_path: str = Field(..., description="Path to the generated audio file")
     mime_type: str = Field(..., description="MIME type of audio")
     duration_seconds: float = Field(..., description="Duration in seconds")
     word_count: int = Field(..., description="Total word count")

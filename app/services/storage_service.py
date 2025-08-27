@@ -64,21 +64,23 @@ class PodcastStorageService:
         except Exception as e:
             logger.error(f"[Storage] Failed to save metadata: {e}")
     
-    def store_podcast(self, topic: str, minutes: int, duration_seconds: float, 
-                      word_count: int, audio_base64: str, mime_type: str) -> StoredPodcast:
+    def store_podcast(self, podcast_id: str, topic: str, minutes: int, duration_seconds: float, 
+                      word_count: int, audio_file_path: str, mime_type: str) -> StoredPodcast:
         """Store a new podcast"""
         try:
-            # Generate unique ID
-            podcast_id = str(uuid.uuid4())
+            # Verify the audio file exists
+            audio_path = Path(audio_file_path)
+            if not audio_path.exists():
+                raise ValueError(f"Audio file not found at {audio_file_path}")
             
-            # Save audio file
-            audio_filename = f"{podcast_id}.mp3"
-            audio_path = self.audio_dir / audio_filename
+            # Move the audio file to our storage directory if it's not already there
+            audio_filename = f"{podcast_id}.wav"
+            final_audio_path = self.audio_dir / audio_filename
             
-            # Decode and save audio
-            audio_data = base64.b64decode(audio_base64)
-            with open(audio_path, 'wb') as f:
-                f.write(audio_data)
+            if audio_path != final_audio_path:
+                import shutil
+                shutil.move(str(audio_path), str(final_audio_path))
+                logger.info(f"[Storage] Moved audio file to {final_audio_path}")
             
             # Create podcast metadata
             podcast = StoredPodcast(
@@ -98,11 +100,11 @@ class PodcastStorageService:
             metadata["podcasts"][podcast_id] = podcast.model_dump()
             self._save_metadata(metadata)
             
-            logger.info(f"[Storage] Stored podcast '{topic}' with ID {podcast_id}")
+            logger.info(f"[Storage] Podcast '{topic}' stored successfully with ID: {podcast_id}")
             return podcast
             
         except Exception as e:
-            logger.error(f"[Storage] Failed to store podcast '{topic}': {e}")
+            logger.error(f"[Storage] Failed to store podcast: {e}")
             raise
     
     def get_podcast(self, podcast_id: str) -> Optional[StoredPodcast]:
@@ -191,7 +193,7 @@ class PodcastStorageService:
     def get_audio_file_path(self, podcast_id: str) -> Optional[Path]:
         """Get the file path for a podcast's audio"""
         try:
-            audio_path = self.audio_dir / f"{podcast_id}.mp3"
+            audio_path = self.audio_dir / f"{podcast_id}.wav"
             if audio_path.exists():
                 return audio_path
             logger.warning(f"[Storage] Audio file not found for podcast {podcast_id}")

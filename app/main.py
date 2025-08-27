@@ -94,11 +94,12 @@ async def generate_podcast(request: PodcastRequest):
         # Store the podcast for public access
         try:
             stored_podcast = storage_service.store_podcast(
+                podcast_id=result["podcast_id"],
                 topic=request.topic,
                 minutes=request.minutes,
                 duration_seconds=result["duration_seconds"],
                 word_count=result["word_count"],
-                audio_base64=result["audio_base64"],
+                audio_file_path=result["audio_file_path"],
                 mime_type=result["mime_type"]
             )
             logger.info(f"[API] Podcast stored with ID: {stored_podcast.id}")

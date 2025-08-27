@@ -79,6 +79,22 @@ class ApiClient {
         return await response.json();
     }
 
+    async generateFullPodcast(topic, minutes) {
+        const response = await fetch(`${this.baseUrl}/generate-podcast/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ topic, minutes })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Podcast generation failed: HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
     async generateTTSSegment(segmentId, turns) {
         const response = await fetch(`${this.baseUrl}/tts-segment/`, {
             method: 'POST',

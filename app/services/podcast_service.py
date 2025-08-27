@@ -24,7 +24,7 @@ def generate_full_podcast(topic: str, minutes: int) -> Dict[str, Any]:
         minutes: Duration in minutes
         
     Returns:
-        Dictionary with audio_base64, mime_type, duration_seconds, and word_count
+        Dictionary with audio_file_path, mime_type, duration_seconds, and word_count
     """
     logger.info(f"[Podcast] Starting full podcast generation for topic: '{topic}' ({minutes} minutes)")
     
@@ -54,38 +54,50 @@ def generate_full_podcast(topic: str, minutes: int) -> Dict[str, Any]:
         
         # Generate audio
         audio_start = time.perf_counter()
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            output_path = temp_file.name
+        
+        # Create a unique filename for this podcast
+        import uuid
+        podcast_id = str(uuid.uuid4())
+        audio_filename = f"{podcast_id}.wav"
+        
+        # Ensure the audio directory exists
+        from pathlib import Path
+        audio_dir = Path("storage/podcasts/audio")
+        audio_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate audio directly to the final location
+        output_path = audio_dir / audio_filename
         
         try:
-            synthesize_audio_multi_speaker(script_json, output_path)
+            synthesize_audio_multi_speaker(script_json, str(output_path))
             audio_time = time.perf_counter() - audio_start
             
-            # Read the generated audio file
-            with open(output_path, "rb") as f:
-                audio_bytes = f.read()
+            # Get file size for duration calculation
+            file_size = output_path.stat().st_size
             
-            # Convert to base64
-            import base64
-            audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+            # Calculate approximate duration (WAV at 24kHz, 16-bit, mono)
+            # 24kHz * 2 bytes * 1 channel = 48KB/s
+            duration_seconds = file_size / 48000
             
-            logger.info(f"[Podcast] Audio generated in {audio_time:.2f}s ({len(audio_bytes)} bytes)")
+            logger.info(f"[Podcast] Audio generated in {audio_time:.2f}s ({file_size} bytes, ~{duration_seconds:.1f}s)")
             logger.info(f"[Podcast] Total generation time: {time.perf_counter() - start_time:.2f}s")
             
             return {
-                "audio_base64": audio_base64,
+                "podcast_id": podcast_id,
+                "audio_file_path": str(output_path),
                 "mime_type": "audio/wav",
-                "duration_seconds": len(audio_bytes) / (24000 * 2),  # Approximate duration
+                "duration_seconds": duration_seconds,
                 "word_count": word_count
             }
             
-        finally:
-            # Clean up temporary file
-            import os
-            try:
-                os.unlink(output_path)
-            except OSError:
-                pass
+        except Exception as e:
+            # Clean up the file if generation failed
+            if output_path.exists():
+                try:
+                    output_path.unlink()
+                except OSError:
+                    pass
+            raise e
                 
     except Exception as e:
         logger.error(f"[Podcast] Failed to generate podcast: {str(e)}")
