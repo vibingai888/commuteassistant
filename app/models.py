@@ -3,6 +3,7 @@ Pydantic models for API requests and responses
 """
 
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 class PodcastRequest(BaseModel):
@@ -23,6 +24,36 @@ class PodcastResponse(BaseModel):
     mime_type: str = Field(..., description="MIME type of audio")
     duration_seconds: float = Field(..., description="Duration in seconds")
     word_count: int = Field(..., description="Total word count")
+
+class StoredPodcast(BaseModel):
+    """Model for storing podcast metadata and audio"""
+    id: str = Field(..., description="Unique podcast identifier")
+    topic: str = Field(..., description="Podcast topic")
+    minutes: int = Field(..., description="Duration in minutes")
+    duration_seconds: float = Field(..., description="Duration in seconds")
+    word_count: int = Field(..., description="Total word count")
+    audio_url: str = Field(..., description="URL to access the audio file")
+    created_at: datetime = Field(..., description="When the podcast was created")
+    plays: int = Field(default=0, description="Number of times played")
+    likes: int = Field(default=0, description="Number of likes")
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class PodcastFeedResponse(BaseModel):
+    """Response model for podcast feeds"""
+    podcasts: List[StoredPodcast] = Field(..., description="List of stored podcasts")
+    total_count: int = Field(..., description="Total number of podcasts")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of podcasts per page")
+
+class LikePodcastRequest(BaseModel):
+    """Request model for liking a podcast"""
+    podcast_id: str = Field(..., description="Podcast ID to like")
+
+class LikePodcastResponse(BaseModel):
+    """Response model for liking a podcast"""
+    success: bool = Field(..., description="Whether the like was successful")
+    new_like_count: int = Field(..., description="Updated like count")
 
 class ScriptSegment(BaseModel):
     """Model for a script segment"""

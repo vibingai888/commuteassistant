@@ -121,6 +121,73 @@ class ApiClient {
         ];
     }
 
+    // New methods for podcast feeds and storage
+    async getPodcastFeeds(page = 1, pageSize = 10, sortBy = 'created_at') {
+        try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                page_size: pageSize.toString(),
+                sort_by: sortBy
+            });
+            
+            const response = await fetch(`${this.baseUrl}/podcasts/feed?${params}`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch feeds: HTTP ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to fetch podcast feeds:', error);
+            throw error;
+        }
+    }
+
+    async getPodcast(podcastId) {
+        try {
+            const response = await fetch(`${this.baseUrl}/podcasts/${podcastId}`);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Podcast not found');
+                }
+                throw new Error(`Failed to fetch podcast: HTTP ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error(`Failed to fetch podcast ${podcastId}:`, error);
+            throw error;
+        }
+    }
+
+    async likePodcast(podcastId) {
+        try {
+            const response = await fetch(`${this.baseUrl}/podcasts/${podcastId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Podcast not found');
+                }
+                throw new Error(`Failed to like podcast: HTTP ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error(`Failed to like podcast ${podcastId}:`, error);
+            throw error;
+        }
+    }
+
+    getPodcastAudioUrl(podcastId) {
+        return `${this.baseUrl}/podcasts/audio/${podcastId}`;
+    }
+
     base64ToBlob(base64, mimeType) {
         const byteCharacters = atob(base64);
         const byteNumbers = new Array(byteCharacters.length);

@@ -6,15 +6,17 @@ import json
 import asyncio
 from contextlib import asynccontextmanager
 from typing import List
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.models import (
     PodcastRequest, PodcastResponse, ScriptChunkedResponse, 
-    TTSSegmentRequest, TTSSegmentResponse, SuggestionsResponse, HealthResponse
+    TTSSegmentRequest, TTSSegmentResponse, SuggestionsResponse, HealthResponse,
+    StoredPodcast, PodcastFeedResponse, LikePodcastRequest, LikePodcastResponse
 )
 from app.utils.logging_utils import setup_logging, get_logger
 from app.services.script_service import initialize_vertex_client
@@ -22,6 +24,7 @@ from app.services.tts_service import initialize_tts_client
 from app.services.podcast_service import (
     generate_full_podcast, generate_chunked_podcast_script, generate_tts_segment
 )
+from app.services.storage_service import storage_service
 
 # Setup logging
 logger = setup_logging()
@@ -87,9 +90,107 @@ async def generate_podcast(request: PodcastRequest):
     
     try:
         result = await asyncio.to_thread(generate_full_podcast, request.topic, request.minutes)
+        
+        # Store the podcast for public access
+        try:
+            stored_podcast = storage_service.store_podcast(
+                topic=request.topic,
+                minutes=request.minutes,
+                duration_seconds=result["duration_seconds"],
+                word_count=result["word_count"],
+                audio_base64=result["audio_base64"],
+                mime_type=result["mime_type"]
+            )
+            logger.info(f"[API] Podcast stored with ID: {stored_podcast.id}")
+        except Exception as e:
+            logger.warning(f"[API] Failed to store podcast: {e}")
+            # Continue even if storage fails
+        
         return PodcastResponse(**result)
     except Exception as e:
         logger.exception("[API] generate-podcast failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/podcasts/feed", response_model=PodcastFeedResponse)
+async def get_podcast_feed(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(10, ge=1, le=50, description="Podcasts per page"),
+    sort_by: str = Query("created_at", description="Sort by: created_at, plays, likes")
+):
+    """Get public podcast feed"""
+    logger.info(f"[API] get-podcast-feed called: page={page}, size={page_size}, sort={sort_by}")
+    
+    try:
+        feed = storage_service.get_podcast_feed(page=page, page_size=page_size, sort_by=sort_by)
+        logger.info(f"[API] Retrieved feed with {len(feed.podcasts)} podcasts")
+        return feed
+    except Exception as e:
+        logger.exception("[API] get-podcast-feed failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/podcasts/{podcast_id}", response_model=StoredPodcast)
+async def get_podcast(podcast_id: str):
+    """Get a specific podcast by ID"""
+    logger.info(f"[API] get-podcast called with ID: {podcast_id}")
+    
+    try:
+        podcast = storage_service.get_podcast(podcast_id)
+        if podcast:
+            logger.info(f"[API] Retrieved podcast: {podcast.topic}")
+            return podcast
+        else:
+            logger.warning(f"[API] Podcast {podcast_id} not found")
+            raise HTTPException(status_code=404, detail="Podcast not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("[API] get-podcast failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/podcasts/audio/{podcast_id}")
+async def get_podcast_audio(podcast_id: str):
+    """Get podcast audio file"""
+    logger.info(f"[API] get-podcast-audio called with ID: {podcast_id}")
+    
+    try:
+        audio_path = storage_service.get_audio_file_path(podcast_id)
+        if audio_path and audio_path.exists():
+            logger.info(f"[API] Serving audio for podcast {podcast_id}")
+            return FileResponse(
+                path=audio_path,
+                media_type="audio/mpeg",
+                filename=f"podcast_{podcast_id}.mp3"
+            )
+        else:
+            logger.warning(f"[API] Audio file not found for podcast {podcast_id}")
+            raise HTTPException(status_code=404, detail="Audio file not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("[API] get-podcast-audio failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/podcasts/{podcast_id}/like", response_model=LikePodcastResponse)
+async def like_podcast(podcast_id: str):
+    """Like a podcast"""
+    logger.info(f"[API] like-podcast called with ID: {podcast_id}")
+    
+    try:
+        success = storage_service.like_podcast(podcast_id)
+        if success:
+            # Get updated like count
+            podcast = storage_service.get_podcast(podcast_id)
+            like_count = podcast.likes if podcast else 0
+            
+            logger.info(f"[API] Podcast {podcast_id} liked successfully, total likes: {like_count}")
+            return LikePodcastResponse(success=True, new_like_count=like_count)
+        else:
+            logger.warning(f"[API] Failed to like podcast {podcast_id}")
+            raise HTTPException(status_code=404, detail="Podcast not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("[API] like-podcast failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-script-chunked/", response_model=ScriptChunkedResponse)
