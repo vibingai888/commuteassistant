@@ -22,7 +22,16 @@ class FeedsManager {
         // Force GCP mode for production
         if (window.location.hostname === 'commuteassistant.web.app') {
             this.apiClient.setApiMode('gcp');
-            window.log('Forced GCP mode for production');
+            this.log('Forced GCP mode for production');
+        }
+    }
+
+    // Helper method for logging with fallback
+    log(message, type = 'info') {
+        if (window.log) {
+            window.log(message, type);
+        } else {
+            console.log(`[FeedsManager] ${message}`);
         }
     }
 
@@ -34,7 +43,7 @@ class FeedsManager {
                 this.sortBy = e.target.value;
                 this.currentPage = 1;
                 this.loadFeeds();
-                window.log(`Changed sort order to: ${this.sortBy}`);
+                this.log(`Changed sort order to: ${this.sortBy}`);
             });
         }
 
@@ -43,7 +52,7 @@ class FeedsManager {
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 this.loadFeeds();
-                window.log('Refreshed podcast feeds');
+                this.log('Refreshed podcast feeds');
             });
         }
         
@@ -52,7 +61,7 @@ class FeedsManager {
         if (forceGcpBtn) {
             forceGcpBtn.addEventListener('click', () => {
                 this.apiClient.setApiMode('gcp');
-                window.log('Forced GCP mode, refreshing feeds...');
+                this.log('Forced GCP mode, refreshing feeds...');
                 this.loadFeeds();
             });
         }
@@ -82,6 +91,8 @@ class FeedsManager {
 
     async loadFeeds(page = 1, pageSize = 10, sortBy = 'created_at') {
         try {
+            console.log('FeedsManager.loadFeeds called with:', { page, pageSize, sortBy });
+            
             this.currentPage = page;
             this.pageSize = pageSize;
             this.sortBy = sortBy;
@@ -90,46 +101,60 @@ class FeedsManager {
             this.showError(false);
             
             // Debug: Log the current API configuration
-            window.log(`Loading feeds: page ${page}, size ${pageSize}, sort by ${sortBy}`);
-            window.log(`API Base URL: ${this.apiClient.baseUrl}`);
-            window.log(`API Mode: ${localStorage.getItem('apiMode')}`);
-            window.log(`Advanced Mode: ${localStorage.getItem('advancedMode')}`);
+            this.log(`Loading feeds: page ${page}, size ${pageSize}, sort by ${sortBy}`);
+            this.log(`API Base URL: ${this.apiClient.baseUrl}`);
+            this.log(`API Mode: ${localStorage.getItem('apiMode')}`);
+            this.log(`Advanced Mode: ${localStorage.getItem('advancedMode')}`);
             
+            console.log('About to call API client getPodcastFeeds...');
             const response = await this.apiClient.getPodcastFeeds(page, pageSize, sortBy);
+            console.log('API response received:', response);
             
             if (response && response.podcasts) {
                 this.podcasts = response.podcasts;
                 this.totalPages = Math.ceil(response.total_count / pageSize);
+                console.log('Podcasts loaded:', this.podcasts.length, 'Total pages:', this.totalPages);
                 this.renderFeeds();
                 this.updatePagination();
                 
-                window.log(`Loaded ${this.podcasts.length} podcasts (page ${page} of ${this.totalPages})`);
+                this.log(`Loaded ${this.podcasts.length} podcasts (page ${page} of ${this.totalPages})`);
             } else {
+                console.error('Invalid response format:', response);
                 throw new Error('Invalid response format');
             }
             
         } catch (error) {
+            console.error('Error in loadFeeds:', error);
             this.showError(true, error.message);
-            window.log(`Failed to load feeds: ${error.message}`, 'error');
+            this.log(`Failed to load feeds: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
         }
     }
 
     renderFeeds() {
+        console.log('renderFeeds called');
         const podcastsList = document.getElementById('podcastsList');
-        if (!podcastsList) return;
+        console.log('podcastsList element:', podcastsList);
+        
+        if (!podcastsList) {
+            console.error('podcastsList element not found!');
+            return;
+        }
         
         if (this.podcasts.length === 0) {
+            console.log('No podcasts to render, showing empty message');
             podcastsList.innerHTML = '<div class="no-podcasts">No podcasts found. Be the first to create one!</div>';
             return;
         }
         
+        console.log('Rendering', this.podcasts.length, 'podcasts');
         const podcastsHTML = this.podcasts.map(podcast => this.createPodcastCard(podcast)).join('');
         podcastsList.innerHTML = podcastsHTML;
         
         // Re-attach event listeners to new elements
         this.attachPodcastEventListeners();
+        console.log('Feeds rendered successfully');
     }
 
     createPodcastCard(podcast) {
@@ -199,7 +224,7 @@ class FeedsManager {
 
     async playPodcast(podcastId) {
         try {
-            window.log(`Playing podcast ${podcastId}`);
+            this.log(`Playing podcast ${podcastId}`);
             
             // Get podcast details
             const podcast = this.podcasts.find(p => p.id === podcastId);
@@ -215,7 +240,7 @@ class FeedsManager {
             
             // Create audio element and play
             const audioUrl = `${this.apiClient.baseUrl}/podcasts/audio/${podcastId}`;
-            window.log(`Creating audio element with URL: ${audioUrl}`);
+            this.log(`Creating audio element with URL: ${audioUrl}`);
             const audio = new Audio(audioUrl);
             audio.controls = true;
             
@@ -238,15 +263,15 @@ class FeedsManager {
             
             // Add error handling for audio loading
             audio.onerror = (error) => {
-                window.log(`Audio loading error: ${error.message}`, 'error');
+                this.log(`Audio loading error: ${error.message}`, 'error');
             };
             
             audio.onloadstart = () => {
-                window.log(`Audio loading started for: ${podcast.topic}`);
+                this.log(`Audio loading started for: ${podcast.topic}`);
             };
             
             audio.oncanplay = () => {
-                window.log(`Audio can start playing: ${podcast.topic}`);
+                this.log(`Audio can start playing: ${podcast.topic}`);
             };
             
             // Try to play audio with user interaction handling
@@ -254,38 +279,38 @@ class FeedsManager {
                 // Check if audio is ready
                 if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
                     await audio.play();
-                    window.log(`Audio playback started successfully`);
+                    this.log(`Audio playback started successfully`);
                 } else {
                     // Wait for audio to be ready
                     audio.oncanplay = async () => {
                         try {
                             await audio.play();
-                            window.log(`Audio playback started after loading`);
+                            this.log(`Audio playback started after loading`);
                         } catch (playError) {
-                            window.log(`Failed to play after loading: ${playError.message}`, 'error');
+                            this.log(`Failed to play after loading: ${playError.message}`, 'error');
                         }
                     };
                     // Start loading
                     audio.load();
                 }
             } catch (error) {
-                window.log(`Failed to play audio: ${error.message}`, 'error');
+                this.log(`Failed to play audio: ${error.message}`, 'error');
                 // Show user-friendly error message
                 if (error.name === 'NotAllowedError') {
-                    window.log(`Audio playback blocked. Please click the play button again.`, 'warning');
+                    this.log(`Audio playback blocked. Please click the play button again.`, 'warning');
                 }
             }
             
-            window.log(`Started playing: ${podcast.topic}`);
+            this.log(`Started playing: ${podcast.topic}`);
             
         } catch (error) {
-            window.log(`Failed to play podcast: ${error.message}`, 'error');
+            this.log(`Failed to play podcast: ${error.message}`, 'error');
         }
     }
 
     async likePodcast(podcastId, likeBtn) {
         try {
-            window.log(`Liking podcast ${podcastId}`);
+            this.log(`Liking podcast ${podcastId}`);
             
             const response = await this.apiClient.likePodcast(podcastId);
             
@@ -305,13 +330,13 @@ class FeedsManager {
                 this.likedPodcasts.add(podcastId);
                 this.saveLikedPodcasts();
                 
-                window.log(`Podcast ${podcastId} liked successfully`);
+                this.log(`Podcast ${podcastId} liked successfully`);
             } else {
                 throw new Error('Failed to like podcast');
             }
             
         } catch (error) {
-            window.log(`Failed to like podcast: ${error.message}`, 'error');
+            this.log(`Failed to like podcast: ${error.message}`, 'error');
         }
     }
 
@@ -379,7 +404,7 @@ class FeedsManager {
                 this.likedPodcasts = new Set(JSON.parse(liked));
             }
         } catch (error) {
-            window.log('Failed to load liked podcasts from storage', 'error');
+            this.log('Failed to load liked podcasts from storage', 'error');
         }
     }
 
@@ -387,7 +412,7 @@ class FeedsManager {
         try {
             localStorage.setItem('likedPodcasts', JSON.stringify([...this.likedPodcasts]));
         } catch (error) {
-            window.log('Failed to save liked podcasts to storage', 'error');
+            this.log('Failed to save liked podcasts to storage', 'error');
         }
     }
 }

@@ -210,8 +210,17 @@ class UIComponents {
             }
 
             // Initialize audio player with segments
-            if (window.audioPlayer) {
+            if (window.audioPlayer && typeof window.audioPlayer.loadSegments === 'function') {
+                this.log('🎵 Audio player found, loading segments...');
                 await window.audioPlayer.loadSegments(segments, false); // false = normal mode
+                this.log('✅ Segments loaded into audio player');
+            } else {
+                this.log('⚠️ Audio player not available or loadSegments method not found', 'warning');
+                console.error('Audio player status:', {
+                    exists: !!window.audioPlayer,
+                    type: typeof window.audioPlayer,
+                    hasLoadSegments: window.audioPlayer ? typeof window.audioPlayer.loadSegments : 'N/A'
+                });
             }
             
             // Refresh the feeds to show the new podcast
@@ -263,14 +272,19 @@ class UIComponents {
         this.log(`🎭 Created ${mockSegments.length} mock segments with sample audio files`);
         
         // Initialize audio player with mock segments
-        if (window.audioPlayer) {
+        if (window.audioPlayer && typeof window.audioPlayer.loadSegments === 'function') {
             console.log('Calling audioPlayer.loadSegments with mock mode enabled');
             this.log('🎭 Loading mock segments into audio player...');
             await window.audioPlayer.loadSegments(mockSegments, true); // true = mock mode
             this.log('🎭 Mock segments loaded successfully! Audio player ready.');
         } else {
-            console.error('Audio player not available!');
-            this.log('❌ Error: Audio player not available', 'error');
+            console.error('Audio player not available or loadSegments method not found!');
+            this.log('❌ Error: Audio player not available or loadSegments method not found', 'error');
+            console.error('Audio player status:', {
+                exists: !!window.audioPlayer,
+                type: typeof window.audioPlayer,
+                hasLoadSegments: window.audioPlayer ? typeof window.audioPlayer.loadSegments : 'N/A'
+            });
         }
     }
 
