@@ -155,13 +155,38 @@ async def get_podcast_audio(podcast_id: str):
     logger.info(f"[API] get-podcast-audio called with ID: {podcast_id}")
     
     try:
+        # Try to get audio from Cloud Storage first
+        audio_blob = storage_service.get_audio_blob(podcast_id)
+        
+        if audio_blob:
+            # Serve from Cloud Storage
+            logger.info(f"[API] Serving audio from Cloud Storage for podcast {podcast_id}")
+            
+            # Get the audio data
+            audio_data = audio_blob.download_as_bytes()
+            
+            # Return as streaming response with proper headers
+            from fastapi.responses import Response
+            return Response(
+                content=audio_data,
+                media_type="audio/wav",
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, HEAD",
+                    "Access-Control-Allow-Headers": "*",
+                    "Cache-Control": "public, max-age=3600",
+                    "Content-Length": str(len(audio_data))
+                }
+            )
+        
+        # Fallback to local file if Cloud Storage fails
         audio_path = storage_service.get_audio_file_path(podcast_id)
         if audio_path and audio_path.exists():
-            logger.info(f"[API] Serving audio for podcast {podcast_id}")
+            logger.info(f"[API] Serving audio from local file for podcast {podcast_id}")
             return FileResponse(
                 path=audio_path,
-                media_type="audio/mpeg",
-                filename=f"podcast_{podcast_id}.mp3",
+                media_type="audio/wav",
+                filename=f"podcast_{podcast_id}.wav",
                 headers={
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "GET, HEAD",
@@ -172,6 +197,7 @@ async def get_podcast_audio(podcast_id: str):
         else:
             logger.warning(f"[API] Audio file not found for podcast {podcast_id}")
             raise HTTPException(status_code=404, detail="Audio file not found")
+            
     except HTTPException:
         raise
     except Exception as e:
