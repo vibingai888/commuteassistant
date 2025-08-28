@@ -50,12 +50,12 @@ async def lifespan(app: FastAPI):
     # Initialize clients
     try:
         initialize_vertex_client()
-    except Exception as _:
+    except Exception:
         logger.exception("[Startup] Failed to initialize Vertex client")
 
     try:
         initialize_tts_client()
-    except Exception as _:
+    except Exception:
         logger.exception("[Startup] Failed to initialize TTS client")
 
     yield
@@ -107,7 +107,7 @@ async def generate_podcast(request: PodcastRequest):
                 mime_type=result["mime_type"],
             )
             logger.info(f"[API] Podcast stored with ID: {stored_podcast.id}")
-        except Exception as _:
+        except Exception:
             logger.warning("[API] Failed to store podcast")
             # Continue even if storage fails
 

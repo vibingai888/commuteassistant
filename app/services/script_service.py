@@ -27,7 +27,7 @@ def initialize_vertex_client() -> None:
             vertexai=True, project=config.GOOGLE_CLOUD_PROJECT, location=config.GOOGLE_CLOUD_LOCATION
         )
         logger.info("[Script] Initialized Vertex client for script generation")
-    except Exception as _:
+    except Exception:
         logger.exception("[Script] Failed to initialize Vertex client")
         raise
 
@@ -225,7 +225,7 @@ def chunk_turns_by_words(
 
 def generate_podcast_script_chunked(topic: str, minutes: int, words_per_chunk: int = 100, wpm: int = 190) -> Dict[str, Any]:
     """Ask the model for chunked segments; fallback to local chunking if needed."""
-    logger.info(f"[Script] generate_podcast_script_chunked called")
+    logger.info("[Script] generate_podcast_script_chunked called")
     logger.info(f"[Script] Parameters: topic='{topic}', minutes={minutes}, words_per_chunk={words_per_chunk}, wpm={wpm}")
 
     # Validate inputs

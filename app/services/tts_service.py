@@ -30,7 +30,7 @@ def initialize_tts_client() -> None:
 
         GENAI_TTS_CLIENT = genai.Client(api_key=api_key)
         logger.info("[TTS] Initialized Google AI API client for TTS")
-    except Exception as _:
+    except Exception:
         logger.exception("[TTS] Failed to initialize TTS client")
         raise
 
@@ -68,9 +68,9 @@ def tts_for_turns(turns: List[Dict[str, str]]) -> Dict[str, Any]:
     conversation_text = "\n".join(conversation_parts)
     logger.info(f"[TTS] Built conversation text: {len(conversation_text)} chars, first 100 chars: {conversation_text[:100]!r}")
 
-    logger.info(f"[TTS] Sending request to Gemini TTS API...")
-    logger.info(f"[TTS] Model: gemini-2.5-flash-preview-tts")
-    logger.info(f"[TTS] Configuring multi-speaker voices: Jay=Kore, Nik=Puck")
+    logger.info("[TTS] Sending request to Gemini TTS API...")
+    logger.info("[TTS] Model: gemini-2.5-flash-preview-tts")
+    logger.info("[TTS] Configuring multi-speaker voices: Jay=Kore, Nik=Puck")
 
     try:
         response = tts_client.models.generate_content(
@@ -98,12 +98,12 @@ def tts_for_turns(turns: List[Dict[str, str]]) -> Dict[str, Any]:
                 ),
             ),
         )
-        logger.info(f"[TTS] TTS API request sent successfully")
+        logger.info("[TTS] TTS API request sent successfully")
     except Exception as e:
         logger.error(f"[TTS] TTS API request failed: {e}")
         raise
 
-    logger.info(f"[TTS] Processing TTS API response...")
+    logger.info("[TTS] Processing TTS API response...")
 
     if not response or not getattr(response, "candidates", None):
         logger.error("[TTS] Empty response or no candidates from TTS API")
@@ -124,7 +124,7 @@ def tts_for_turns(turns: List[Dict[str, str]]) -> Dict[str, Any]:
         logger.error("[TTS] Inline audio data missing in response part")
         raise ValueError("TTS response missing inline audio data")
 
-    logger.info(f"[TTS] Found inline audio data in response")
+    logger.info("[TTS] Found inline audio data in response")
 
     mime_type = getattr(inline, "mime_type", None) or ""
     data_b64_or_bytes = inline.data
@@ -143,7 +143,7 @@ def tts_for_turns(turns: List[Dict[str, str]]) -> Dict[str, Any]:
         wav_bytes = decoded
         logger.info(f"[TTS] Using raw WAV data, no conversion needed")
     else:
-        logger.info(f"[TTS] Converting PCM to WAV format...")
+        logger.info("[TTS] Converting PCM to WAV format...")
         wav_bytes = create_wav_bytes(decoded, channels=1, rate=24000, sample_width=2)
         mime_type = "audio/wav"
         logger.info(f"[TTS] Converted to WAV, new length: {len(wav_bytes)}")
