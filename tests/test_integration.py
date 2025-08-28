@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
+@pytest.mark.integration
 class TestIntegration:
     """Integration test cases for complete podcast generation flow"""
     

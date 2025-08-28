@@ -164,6 +164,7 @@ class TestScriptChunkedResponse:
             ScriptChunkedResponse(**data)
 
 
+@pytest.mark.unit
 class TestTTSSegmentRequest:
     """Test cases for TTSSegmentRequest model"""
     
@@ -172,21 +173,23 @@ class TestTTSSegmentRequest:
         data = {
             "segmentId": 1,
             "turns": [
-                {"text": "Hello", "speaker": "Jay"},
-                {"text": "Hi there", "speaker": "Nik"}
+                {"speaker": "Jay", "text": "Hello"},
+                {"speaker": "Nik", "text": "Hi there"}
             ]
         }
         request = TTSSegmentRequest(**data)
         assert request.segment_id == 1
         assert len(request.turns) == 2
-        assert request.turns[0]["text"] == "Hello"
         assert request.turns[0]["speaker"] == "Jay"
+        assert request.turns[0]["text"] == "Hello"
     
     def test_camel_case_alias(self):
         """Test that camelCase field names work with alias"""
         data = {
             "segmentId": 2,
-            "turns": [{"text": "Test", "speaker": "Jay"}]
+            "turns": [
+                {"speaker": "Jay", "text": "Test"}
+            ]
         }
         request = TTSSegmentRequest(**data)
         assert request.segment_id == 2  # Should map from segmentId
@@ -194,39 +197,39 @@ class TestTTSSegmentRequest:
     def test_missing_segment_id(self):
         """Test validation error when segment_id is missing"""
         data = {
-            "turns": [{"text": "Hello", "speaker": "Jay"}]
+            "turns": [
+                {"speaker": "Jay", "text": "Test"}
+            ]
         }
         with pytest.raises(ValidationError):
             TTSSegmentRequest(**data)
     
     def test_missing_turns(self):
         """Test validation error when turns is missing"""
-        data = {"segmentId": 1}
+        data = {"segment_id": 1}
         with pytest.raises(ValidationError):
             TTSSegmentRequest(**data)
     
     def test_empty_turns(self):
         """Test validation error when turns is empty"""
-        data = {
-            "segmentId": 1,
-            "turns": []
-        }
+        data = {"segment_id": 1, "turns": []}
         with pytest.raises(ValidationError):
             TTSSegmentRequest(**data)
     
     def test_invalid_turn_structure(self):
         """Test validation error when turn structure is invalid"""
         data = {
-            "segmentId": 1,
+            "segment_id": 1,
             "turns": [
-                {"text": "Hello"},  # Missing speaker
-                {"speaker": "Jay"}   # Missing text
+                {"speaker": "Jay"},  # Missing text
+                {"text": "Hi there"}  # Missing speaker
             ]
         }
         with pytest.raises(ValidationError):
             TTSSegmentRequest(**data)
 
 
+@pytest.mark.unit
 class TestTTSSegmentResponse:
     """Test cases for TTSSegmentResponse model"""
     

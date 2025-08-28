@@ -15,6 +15,7 @@ from app.utils.audio_utils import (
 )
 
 
+@pytest.mark.unit
 class TestAudioUtils:
     """Test cases for audio utility functions"""
     

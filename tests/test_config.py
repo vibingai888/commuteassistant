@@ -1,5 +1,5 @@
 """
-Unit tests for configuration module
+Unit tests for configuration management
 """
 
 import os
@@ -8,6 +8,7 @@ from unittest.mock import patch
 from app.config import Config
 
 
+@pytest.mark.unit
 class TestConfig:
     """Test cases for Config class"""
     

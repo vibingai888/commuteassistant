@@ -2,12 +2,13 @@
 Unit tests for TTS service
 """
 
-import base64
 import pytest
-from unittest.mock import patch, MagicMock
+import base64
+from unittest.mock import Mock, patch, MagicMock
 from app.services.tts_service import tts_for_turns
 
 
+@pytest.mark.unit
 class TestTTSService:
     """Test cases for TTS service"""
     

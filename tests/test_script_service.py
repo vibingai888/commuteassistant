@@ -14,6 +14,7 @@ from app.services.script_service import (
 )
 
 
+@pytest.mark.unit
 class TestScriptService:
     """Test cases for script generation service"""
     
