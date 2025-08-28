@@ -4,7 +4,6 @@ Unit tests for utility functions
 
 import base64
 
-
 import pytest
 
 from app.utils.audio_utils import base64_to_wav, create_wav_bytes, format_duration, get_audio_duration

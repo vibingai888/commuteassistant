@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional
 
 from google import genai
 
-
 from app.config import config
 from app.utils.logging_utils import get_logger
 

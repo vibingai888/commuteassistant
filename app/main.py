@@ -2,32 +2,32 @@
 FastAPI application for Podcast Generator API
 """
 
-import json
 import asyncio
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.config import config
 from app.models import (
+    HealthResponse,
+    LikePodcastResponse,
+    PodcastFeedResponse,
     PodcastRequest,
     PodcastResponse,
     ScriptChunkedResponse,
+    StoredPodcast,
+    SuggestionsResponse,
     TTSSegmentRequest,
     TTSSegmentResponse,
-    SuggestionsResponse,
-    HealthResponse,
-    StoredPodcast,
-    PodcastFeedResponse,
-    LikePodcastResponse,
 )
-from app.utils.logging_utils import setup_logging
+from app.services.podcast_service import generate_chunked_podcast_script, generate_full_podcast, generate_tts_segment
 from app.services.script_service import initialize_vertex_client
-from app.services.tts_service import initialize_tts_client
-from app.services.podcast_service import generate_full_podcast, generate_chunked_podcast_script, generate_tts_segment
 from app.services.storage_service import storage_service
+from app.services.tts_service import initialize_tts_client
+from app.utils.logging_utils import setup_logging
 
 # Setup logging
 logger = setup_logging()
