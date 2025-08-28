@@ -23,6 +23,7 @@ class FeedsManager {
         if (window.location.hostname === 'commuteassistant.web.app') {
             this.apiClient.setApiMode('gcp');
             this.log('Forced GCP mode for production');
+            console.log('FeedsManager: Forced GCP mode, baseUrl:', this.apiClient.baseUrl);
         }
     }
 
@@ -107,6 +108,9 @@ class FeedsManager {
             this.log(`Advanced Mode: ${localStorage.getItem('advancedMode')}`);
             
             console.log('About to call API client getPodcastFeeds...');
+            console.log('API Base URL being used:', this.apiClient.baseUrl);
+            console.log('Full API endpoint:', `${this.apiClient.baseUrl}/podcasts/feed`);
+            
             const response = await this.apiClient.getPodcastFeeds(page, pageSize, sortBy);
             console.log('API response received:', response);
             

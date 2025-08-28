@@ -21,6 +21,15 @@ class ApiClient {
         const savedMode = localStorage.getItem('apiMode');
         const savedAdvanced = localStorage.getItem('advancedMode');
 
+        // Auto-detect hosted environment and use GCP backend
+        if (window.location.hostname === 'commuteassistant.web.app') {
+            console.log('API Client: Detected hosted environment, forcing GCP backend');
+            this.baseUrl = 'https://podcast-generator-api-wychcrdora-uc.a.run.app';
+            localStorage.setItem('apiMode', 'gcp');
+            localStorage.setItem('advancedMode', 'false');
+            return;
+        }
+
         if (savedAdvanced === 'true' && savedUrl) {
             this.baseUrl = savedUrl;
         } else if (savedMode === 'gcp') {
