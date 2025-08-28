@@ -34,7 +34,6 @@ def initialize_tts_client() -> None:
 
 def get_tts_client() -> genai.Client:
     """Get the TTS client, initializing if needed"""
-    global GENAI_TTS_CLIENT
     if GENAI_TTS_CLIENT is None:
         initialize_tts_client()
     return GENAI_TTS_CLIENT

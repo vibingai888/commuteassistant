@@ -58,9 +58,15 @@ class TestPodcastRequest:
     
     def test_large_minutes(self):
         """Test validation error when minutes exceeds maximum"""
-        data = {"topic": "Test Topic", "minutes": 20}
+        data = {"topic": "Test Topic", "minutes": 31}
         with pytest.raises(ValidationError):
             PodcastRequest(**data)
+    
+    def test_maximum_minutes(self):
+        """Test that maximum minutes (30) is allowed"""
+        data = {"topic": "Test Topic", "minutes": 30}
+        request = PodcastRequest(**data)
+        assert request.minutes == 30
 
 
 class TestScriptSegment:

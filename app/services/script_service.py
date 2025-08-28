@@ -33,7 +33,6 @@ def initialize_vertex_client() -> None:
 
 def get_vertex_client() -> genai.Client:
     """Get the Vertex AI client, initializing if needed"""
-    global GENAI_VERTEX_CLIENT
     if GENAI_VERTEX_CLIENT is None:
         initialize_vertex_client()
     return GENAI_VERTEX_CLIENT
