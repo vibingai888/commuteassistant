@@ -17,6 +17,16 @@ class PodcastApp {
     init() {
         console.log('PodcastApp.init() started');
         
+        // Detect mobile device and log for optimization tracking
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        console.log('Device detection:', { isMobile, isTouchDevice, userAgent: navigator.userAgent });
+        
+        if (isMobile || isTouchDevice) {
+            console.log('Mobile/touch device detected - applying mobile optimizations');
+            this.uiComponents.log('Mobile device detected - interface optimized for touch');
+        }
+        
         // Initialize API client
         this.apiClient = new ApiClient();
         console.log('API client initialized');
@@ -51,6 +61,9 @@ class PodcastApp {
         
         // Log successful initialization
         this.uiComponents.log('Frontend loaded successfully');
+        if (isMobile || isTouchDevice) {
+            this.uiComponents.log('Mobile optimizations applied');
+        }
         console.log('PodcastApp.init() completed');
     }
 
@@ -90,14 +103,48 @@ class PodcastApp {
     }
 
     setupDurationSlider() {
-        const durationSlider = document.getElementById('minutes');
+        const durationButtons = document.querySelectorAll('.duration-btn');
         const durationDisplay = document.getElementById('durationDisplay');
+        const hiddenInput = document.getElementById('minutes');
         
-        if (durationSlider && durationDisplay) {
-            durationSlider.addEventListener('input', (e) => {
-                durationDisplay.textContent = e.target.value;
+        if (durationButtons.length > 0 && durationDisplay && hiddenInput) {
+            console.log('Setting up duration buttons:', durationButtons.length, 'buttons found');
+            
+            // Set initial active state
+            const initialValue = hiddenInput.value;
+            const initialButton = document.querySelector(`[data-value="${initialValue}"]`);
+            if (initialButton) {
+                initialButton.classList.add('active');
+                console.log('Set initial active duration button:', initialValue, 'minutes');
+            }
+            
+            durationButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const value = e.target.getAttribute('data-value');
+                    console.log('Duration button clicked:', value, 'minutes');
+                    
+                    // Update display and hidden input
+                    durationDisplay.textContent = value;
+                    hiddenInput.value = value;
+                    
+                    // Update active state
+                    durationButtons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    // Log the duration change
+                    this.uiComponents.log(`Duration changed to ${value} minutes`);
+                    
+                    console.log('Duration updated to:', value, 'minutes');
+                });
             });
-            console.log('Duration slider initialized');
+            
+            console.log('Duration buttons initialized successfully');
+        } else {
+            console.warn('Duration elements not found:', {
+                buttons: durationButtons.length,
+                display: !!durationDisplay,
+                input: !!hiddenInput
+            });
         }
     }
 
