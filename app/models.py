@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 class PodcastRequest(BaseModel):
     """Request model for podcast generation"""
     topic: str = Field(..., min_length=1, max_length=500, description="Podcast topic")
-    minutes: int = Field(..., ge=1, le=15, description="Duration in minutes")
+    minutes: int = Field(..., ge=1, le=30, description="Duration in minutes")
     
     @field_validator('topic')
     @classmethod

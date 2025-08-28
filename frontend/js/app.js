@@ -43,6 +43,9 @@ class PodcastApp {
         // Set up tab navigation
         this.setupTabNavigation();
         
+        // Set up duration slider
+        this.setupDurationSlider();
+        
         // Test API health
         this.testApiHealth();
         
@@ -84,6 +87,18 @@ class PodcastApp {
                 this.uiComponents.log(`Switched to ${targetTab} tab`);
             });
         });
+    }
+
+    setupDurationSlider() {
+        const durationSlider = document.getElementById('minutes');
+        const durationDisplay = document.getElementById('durationDisplay');
+        
+        if (durationSlider && durationDisplay) {
+            durationSlider.addEventListener('input', (e) => {
+                durationDisplay.textContent = e.target.value;
+            });
+            console.log('Duration slider initialized');
+        }
     }
 
     async loadFeeds() {

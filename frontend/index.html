@@ -54,8 +54,12 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="minutes">Duration (minutes, 1 - 15):</label>
-                    <input type="number" id="minutes" name="minutes" min="1" max="15" value="3" required>
+                    <label for="minutes">Duration: <span id="durationDisplay">3</span> minutes</label>
+                    <input type="range" id="minutes" name="minutes" min="1" max="30" value="3" class="duration-slider">
+                    <div class="duration-labels">
+                        <span>1 min</span>
+                        <span>30 min</span>
+                    </div>
                 </div>
                 
                 <button type="submit" id="generateBtn">🎵 Generate Podcast</button>
